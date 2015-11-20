@@ -1,16 +1,15 @@
 import java.net.Socket;
-import java.security.spec.EncodedKeySpec;
 import java.util.Scanner;
 import java.io.*;
 import java.awt.image.*;
-import com.sun.org.apache.xerces.internal.impl.dv.util.*;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
 public class clientTest {
 
 	static int port = 8080;
-	static String ip = "10.30.115.215";
+	static String ip = "127.0.0.1";//"10.30.115.215";
 	static Socket socket = null;
 	
 	public static void main(String[] args) throws IOException {
@@ -40,6 +39,7 @@ public class clientTest {
 			
 			while(true){			
 			String message = "";
+			byte[] buffer = new byte[1000];
 			//사용자가 입력한 문자열을 받음
 			message = s.nextLine();
 			//받은 문자열을 서버에 전송
@@ -47,29 +47,49 @@ public class clientTest {
 			in = new DataInputStream(socket.getInputStream());
 			out = new DataOutputStream(socket.getOutputStream());
 			
-			out.writeUTF(message);
-			System.out.println(in.readUTF());
+			out.write(message.getBytes());
+			out.flush();
+			in.read(buffer);
+			System.out.println(new String(buffer));
+			Arrays.fill(buffer, (byte) 0);
 			
 			ByteArrayOutputStream baos = new ByteArrayOutputStream(1000);
-			BufferedImage img = ImageIO.read(new File("C:/Users/ChoiYeojin/Desktop/Desert.jpg"));
+			BufferedImage img = ImageIO.read(new File("C:/Users/ChoiYeojin/Desktop/OSS/Desert.jpg"));
 			
 			out.writeInt(img.getHeight());
-			System.out.println(in.readUTF());
+			in.read(buffer);
+			System.out.println(new String(buffer));
+			Arrays.fill(buffer, (byte) 0);
 			
 			out.writeInt(img.getWidth());
-			System.out.println(in.readUTF());
+			in.read(buffer);
+			System.out.println(new String(buffer));
+			Arrays.fill(buffer, (byte) 0);
 			
 			ImageIO.write(img,  "jpg", baos);
-			baos.flush();
+			//baos.flush();
 			
 			byte[] base64String = baos.toByteArray();//Base64.encode(baos.toByteArray());
-			baos.close();
 			
 			out.writeInt(base64String.length);
-			System.out.println(in.readUTF());
+			in.read(buffer);
+			System.out.println(new String(buffer));
+			Arrays.fill(buffer, (byte) 0);
+			int count = 0;
+			for(int i = 0; i < base64String.length; i += 4500)
+			{
+				if(base64String.length - i >= 4500)
+					out.write(base64String, i, 4500);
+				else
+					out.write(base64String, i, base64String.length - i);
+				out.flush();
+				in.read(buffer);
+				System.out.println(new String(buffer) + ": " + i);
+				Arrays.fill(buffer, (byte) 0);
+				count ++;
+			}
+			System.out.println("Count:" + count);
 			
-			out.write(base64String, 0, base64String.length);
-			System.out.println(in.readUTF());
 			
 			/*out.writeInt(dataByte[0].length);
 			System.out.println(in.readUTF());

@@ -37,8 +37,9 @@ public class FSserver {
 		Socket socket;
 		DataInputStream in;
 		DataOutputStream out;
-		//String name;
-		String name;
+		//String buffer;
+		//String buffer;
+		byte[] buffer;
 		
 		public ThreadFunction(Socket socket)
 		{
@@ -48,32 +49,34 @@ public class FSserver {
 		@Override
 		public void run()
 		{
-			//String name = "";
+			//String buffer = "";
 			
 			while(true)
 			{
 			try{
-				name = "";
+				//buffer = "";
 				
 				in = new DataInputStream(this.socket.getInputStream());
 				out = new DataOutputStream(this.socket.getOutputStream());
-				
-				name = in.readUTF();
-				
-				//name = in.read();
-				if(name.equals("out"))
+				byte[] buffer = new byte[1000];
+				Arrays.fill(buffer, (byte) 0);
+				//String message = "";
+				in.read(buffer);
+				String nameStr = new String(buffer);
+				//buffer = in.read();
+				if(buffer.equals("out"))
 				{
 					System.out.println("connection End");
 					break;
 				}
 				
-				out.writeUTF("OK");
-				System.out.println(socket + ": " + name);
-				if(name.subSequence(0, 5).equals("WRITE"))
-					saveWriteData(name);
-				if(name.subSequence(0, 5).equals("IMAGE"))
-					savingImage(name);
-				
+				out.write("OK".getBytes());
+				out.flush();
+				System.out.println(socket + ": " + new String(buffer));
+				if(nameStr.subSequence(0, 5).equals("WRITE"))
+					saveWriteData(nameStr);
+				if(nameStr.subSequence(0, 5).equals("IMAGE"))
+					savingImage(nameStr);
 				
 			}
 			catch(Exception e){
@@ -86,22 +89,34 @@ public class FSserver {
 		{
 			int imgH = in.readInt();
 			System.out.println("imgH: " + imgH);
-			out.writeUTF("ImageH OK");
+			out.write("ImageH OK".getBytes());
+			out.flush();
 			int imgW = in.readInt();
 			System.out.println("imgW: " + imgW);
-			out.writeUTF("ImageW OK");
-			
+			out.write("ImageW OK".getBytes());
+			out.flush();
 			int length = in.readInt();
 			System.out.println("length: " + length);
-			out.writeUTF("Byte Length OK");
-			
+			out.write("Byte Length OK".getBytes());
+			out.flush();
+			byte[] baseTemp = new byte[4500];
 			byte[] base64String = new byte[length];
-			in.read(base64String, 0, length);
-			out.writeUTF("IMAGE READ OK");
-			System.out.println("image read ok");
+			int count = 0;
+			for(int i = 0; i < length; i += 4500)
+			{
+				int dataLength = in.read(baseTemp);
+				System.out.println("ImageByte: " + dataLength);
+				System.arraycopy(baseTemp, 0, base64String, i, dataLength);
+				out.write("IMAGE READ OK".getBytes());
+				out.flush();
+				count ++;
+			}
+			
+			System.out.println("image read ok: " + count);
 			
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
-			ImageIO.write(img, "jpg", new File("C:/Users/ChoiYeojin/Desktop/DesertTest.jpg"));
+			ImageIO.write(img, "jpg", new File("C:/Users/ChoiYeojin/Desktop/OSS/DesertTest.jpg"));
+			
 			
 		}
 		public void saveImage(String data)
