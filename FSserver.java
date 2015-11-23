@@ -2,21 +2,17 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
 import java.util.*;
-import java.awt.*;
-import java.awt.color.ColorSpace;
 import java.awt.image.*;
-
 import javax.imageio.*;
-import javax.imageio.stream.*;
 
-import com.sun.org.apache.xerces.internal.impl.dv.util.*;
 // DATE, USERNAME, BIGFOOD, SMALLFOOD, REGION, PRICE, EVALUE
 
 public class FSserver {
-	LinkedList<BoardData> DataLinks = new LinkedList<BoardData>();
+	static LinkedList<BoardData> DataLinks = new LinkedList<BoardData>();
 	static int port = 8080;
 	ServerSocket serverSocket = null;
 	Socket socket = null;
+	
 	public void init() {
 		try{
 		serverSocket = new ServerSocket(port);
@@ -37,8 +33,6 @@ public class FSserver {
 		Socket socket;
 		DataInputStream in;
 		DataOutputStream out;
-		//String buffer;
-		//String buffer;
 		byte[] buffer;
 		
 		public ThreadFunction(Socket socket)
@@ -48,22 +42,16 @@ public class FSserver {
 		}
 		@Override
 		public void run()
-		{
-			//String buffer = "";
-			
+		{			
 			while(true)
 			{
 			try{
-				//buffer = "";
-				
 				in = new DataInputStream(this.socket.getInputStream());
 				out = new DataOutputStream(this.socket.getOutputStream());
 				byte[] buffer = new byte[1000];
 				Arrays.fill(buffer, (byte) 0);
-				//String message = "";
 				in.read(buffer);
-				String nameStr = new String(buffer);
-				//buffer = in.read();
+				String bufStr = new String(buffer);
 				if(buffer.equals("out"))
 				{
 					System.out.println("connection End");
@@ -73,15 +61,25 @@ public class FSserver {
 				out.write("OK".getBytes());
 				out.flush();
 				System.out.println(socket + ": " + new String(buffer));
-				if(nameStr.subSequence(0, 5).equals("WRITE"))
-					saveWriteData(nameStr);
-				if(nameStr.subSequence(0, 5).equals("IMAGE"))
-					savingImage(nameStr);
+				if(bufStr.subSequence(0, 5).equals("WRITE"))
+					saveWriteData();
+				else if(bufStr.subSequence(0, 5).equals("IMAGE"))
+					savingImage(bufStr);
+				else if(bufStr.subSequence(0, 6).equals("SEARCH"))
+					searchData(bufStr);
 				
 			}
 			catch(Exception e){
 				System.out.println("Send & Receive Error: " + e);
+				break;
 			}
+			}
+			try{
+				socket.close();
+			}
+			catch(Exception e)
+			{
+				System.out.println("Socket closing Error: " + e);
 			}
 			
 		}
@@ -116,75 +114,46 @@ public class FSserver {
 			
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
 			ImageIO.write(img, "jpg", new File("C:/Users/ChoiYeojin/Desktop/OSS/DesertTest.jpg"));
-			
-			
 		}
-		public void saveImage(String data)
+		public void saveWriteData() throws IOException
 		{
-			
-			try{
-			
-			//String imgb = "";
-			int imgH = in.readInt();
-			out.writeUTF("ImageH OK");
-			out.flush();
-			int imgW = in.readInt();
-			out.writeUTF("ImageW OK");
-			out.flush();
-			int byteLength = in.readInt();
-			out.writeUTF("bLength OK");
-			out.flush();
-			
-			byte[] imageByte = new byte[byteLength];
-			
-			in.read(imageByte, 0, imgH * imgW);
-			
-			System.out.println("[Image]: " + imageByte.length);
-			out.writeUTF("IMAGE READ OK");
-			out.flush();
-			//imageByte = imgb.getBytes();
-			//BufferedImage image = createRGBImage(imageByte);
-//			FileOutputStream stream = new FileOutputStream("C:/Users/ChoiYeojin/Desktop/DesertTest.jpg");
-			//ImageIO.write(image, "jpg", new File("C:/Users/ChoiYeojin/Desktop/DesertTest.jpg"));
-			
-			ByteArrayInputStream bais = new ByteArrayInputStream(imageByte);
-			Iterator<?> readers = ImageIO.getImageReadersByFormatName("jpg");
-			ImageReader reader = (ImageReader) readers.next();
-			Object source = bais;
-			ImageInputStream iis = ImageIO.createImageInputStream(source);
-			reader.setInput(iis, true);
-			ImageReadParam param = reader.getDefaultReadParam();
-			Image image = reader.read(0, param);
-			BufferedImage bufferedImage = new BufferedImage(imgW, imgH, BufferedImage.TYPE_INT_RGB);
-			Graphics2D g2d = bufferedImage.createGraphics();
-			g2d.drawImage(image, null, null);
-			File imageFile = new File("C:/Users/ChoiYeojin/Desktop/DesertTest.jpg");
-			ImageIO.write(bufferedImage, "jpg", imageFile);
-			System.out.println("IMAGE SAVE");
-			} catch(Exception e) {
-				System.out.println("reading img Failed.");
-			}
-			
-			
-		}
-		public void saveWriteData(String data)
-		{
-			Date now = new Date();
 			BoardData temp = new BoardData();
-			
+			Date now = new Date();
+			byte[] buf = new byte[1024];
+			in.read(buf);
+			String data = new String(buf);
 			temp.setMiddle5Datas(data.split("/"));
 			temp.setData(0, now.toString());
-			/*try {
-				temp.setData(6, in.readUTF());
-				out.writeUTF("OK");
-				System.out.println(socket + ": evalue");
-			}
-			catch(Exception e)
-			{
-				System.out.println("saveWriteData Error: " + e);
-			}*/
+			
 			DataLinks.add(temp);
 			System.out.println("Success Save new Board Datas: " + DataLinks.size());
+			out.write("SAVED".getBytes());
+			out.flush();
+		}
+		public void searchData(String data) throws IOException
+		{
+			byte[] buf = new byte[1024];
+			Arrays.fill(buf, (byte) 0);
+			int length = in.read(buf);
+			Iterator<BoardData> iterator = DataLinks.iterator();
+			BoardData temp = DataLinks.getFirst();
+			String dataResult;
+			String bufStr = new String(buf, 0, length);
+			while(iterator.hasNext())
+			{
+				String tempStr = temp.getData(2);
+				if(bufStr.equals(tempStr))
+				{
+					dataResult = temp.getAll();
+					out.write(dataResult.getBytes());
+					return;
+				}
+				else
+				{
+					temp = iterator.next();
+				}
+			}
+			out.write("NODATA".getBytes());
 		}
 		
 	}
@@ -193,12 +162,6 @@ public class FSserver {
 		FSserver ms = new FSserver();
 		ms.init();
 
-	}
-	private static BufferedImage createRGBImage(byte[] bytes)
-	{
-		DataBufferByte buffer = new DataBufferByte(bytes, bytes.length);
-		ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{8,8,8}, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-		return new BufferedImage(cm, Raster.createInterleavedRaster(buffer, 1024, 768, 1024 * 3, 3, new int[]{0, 1, 2}, null), false, null);
 	}
 
 }
@@ -209,6 +172,10 @@ class BoardData {
 	public String getData(int index)
 	{
 		return data[index];
+	}
+	public String getAll()
+	{
+		return data[0] + "/" + data[2] + "/" + data[3] + "/" + data[4];
 	}
 	public void setData(int index, String str)
 	{
