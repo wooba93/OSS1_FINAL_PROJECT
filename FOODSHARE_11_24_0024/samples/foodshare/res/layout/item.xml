@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#ffffff">
+
+    <!-- android:textStyle="bold" : 굵은체 -->
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="400dp"
+        android:layout_height="370dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="마는거야 ?"
+        android:id="@+id/textView1"
+        android:textColor="#000000"
+        android:layout_below="@+id/imageView1"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="되는거야 ?"
+        android:id="@+id/textView2"
+        android:layout_below="@+id/imageView1"
+        android:layout_alignParentStart="true"
+        android:textColor="#000000"
+        android:layout_toStartOf="@+id/textView1" />
+
+</RelativeLayout>
