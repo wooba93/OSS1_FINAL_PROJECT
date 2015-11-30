@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="C:\Users\ChoiYeojin\.gradle\caches\modules-2\files-2.1\com.parse.bolts\bolts-android\1.2.0\6ee2953ccf51ce72b6d548c30c4633b99eb4f9dd\bolts-android-1.2.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="6ee2953ccf51ce72b6d548c30c4633b99eb4f9dd">
+        <dex dex="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\pre-dexed\debug\bolts-android-1.2.0-9c02eb0b6aec73d139b5481383301a05537d1902.jar" />
+    </item>
+    <item
+        jar="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\exploded-aar\com.facebook.android\facebook\4.6.0\jars\classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="1a8491200bc3a16036b06fa15662637699e772a2">
+        <dex dex="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\pre-dexed\debug\classes-a1a54887b3951ee2256c6ef2f91046938c09bf67.jar" />
+    </item>
+    <item
+        jar="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\exploded-aar\com.android.support\support-v4\22.2.1\jars\libs\internal_impl-22.2.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="c471eaaba13ff64f6e0383d1c30a9cdc9a97efeb">
+        <dex dex="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\pre-dexed\debug\internal_impl-22.2.1-c688b7e068f4a9267e81f7320d671dba4438b95d.jar" />
+    </item>
+    <item
+        jar="C:\Users\ChoiYeojin\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\22.2.1\support-annotations-22.2.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="61a0ff5c29295ec56d7e0bd3d25d95dbf71b4b2b">
+        <dex dex="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\pre-dexed\debug\support-annotations-22.2.1-64ebcd5429e39a530cbb2f2471654fc23e04f047.jar" />
+    </item>
+    <item
+        jar="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\exploded-aar\com.android.support\support-v4\22.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="f8efd0096475e0daf054267b61544e10dc776503">
+        <dex dex="C:\Users\ChoiYeojin\Desktop\FOODSHARE_11_27_2245\samples\foodshare\build\intermediates\pre-dexed\debug\classes-403f14341b27578cee963c0e35a829ba3a1029d8.jar" />
+    </item>
+
+</items>

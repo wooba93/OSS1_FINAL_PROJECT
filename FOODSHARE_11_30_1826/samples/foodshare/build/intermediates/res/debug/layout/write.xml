@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#ffffff">
+
+    <Button
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/writeButton"
+        android:layout_alignParentEnd="true"
+        android:text="작성"
+        android:onClick="writeButton" />
+
+    <EditText
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:id="@+id/price"
+        android:text="Price"
+        android:textSize="30dp"
+        android:layout_above="@+id/comment"
+        android:layout_alignParentStart="true"
+        android:inputType="number"
+        android:singleLine="true"
+        android:imeOptions="actionNext"/>
+
+    <EditText
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:id="@+id/location"
+        android:text="Location"
+        android:textSize="30dp"
+        android:layout_above="@+id/comment"
+        android:layout_alignParentEnd="true"
+        android:singleLine="true"
+        android:imeOptions="actionNext"/>
+
+    <EditText
+        android:layout_width="400dp"
+        android:layout_height="50dp"
+        android:id="@+id/comment"
+        android:text="Comment"
+        android:textSize="30dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignEnd="@+id/location"
+        android:singleLine="true"
+        android:imeOptions="actionDone"/>
+
+    <Button
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/cancleButton"
+        android:text="취소"
+        android:onClick="cancleButton"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@+id/writeButton" />
+
+    <Spinner
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:spinnerMode="dropdown"
+        android:id="@+id/area"
+        android:focusableInTouchMode="true"
+        android:layout_above="@+id/price"
+        android:layout_alignParentStart="true" />
+
+    <Spinner
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:spinnerMode="dropdown"
+        android:id="@+id/foodstyle"
+        android:focusableInTouchMode="true"
+        android:layout_above="@+id/location"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Take Picture"
+        android:id="@+id/takepicture"
+        android:onClick="takepicture"
+        android:visibility="visible"
+        android:layout_above="@+id/price"
+        android:layout_centerHorizontal="true" />
+
+    <EditText
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:id="@+id/foodname"
+        android:text="Food Name"
+        android:textSize="30dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/location"
+        android:singleLine="true"
+        android:imeOptions="actionNext" />
+
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="370dp"
+        android:id="@+id/picture"
+        android:background="#ffffff"
+        android:layout_above="@+id/area"
+        android:layout_alignParentStart="true"
+        android:clickable="false" />
+
+</RelativeLayout><!-- From: file:/C:/Users/ChoiYeojin/Desktop/FOODSHARE_11_27_2245/samples/foodshare/res/layout/write.xml -->
