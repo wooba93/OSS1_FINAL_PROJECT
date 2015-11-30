@@ -6,6 +6,7 @@ import java.awt.image.*;
 import javax.imageio.*;
 
 // DATE, USERNAME, BIGFOOD, SMALLFOOD, REGION, PRICE, EVALUE
+// SEARCH//
 
 public class FSserver {
 	static LinkedList<BoardData> DataLinks = new LinkedList<BoardData>();
@@ -15,20 +16,21 @@ public class FSserver {
 	
 	public void init() {
 		try{
-		serverSocket = new ServerSocket(port);
-		System.out.println("Server is running...");
-		while(true) {
-			socket = serverSocket.accept();
-			System.out.println(socket.getInetAddress() + ":" + socket.getPort());
-			Thread msr = new ThreadFunction(socket);
-			msr.start();
-		}
+			serverSocket = new ServerSocket(port);
+			System.out.println("Server is running...");
+			while(true) {
+				socket = serverSocket.accept();
+				System.out.println(socket.getInetAddress() + ":" + socket.getPort());
+				Thread msr = new ThreadFunction(socket);
+				msr.start();
+			}
 		}
 		catch(Exception e) {
 			e.printStackTrace();
 		}
 		
 	}
+	
 	class ThreadFunction extends Thread {
 		Socket socket;
 		DataInputStream in;
@@ -51,18 +53,18 @@ public class FSserver {
 				byte[] buffer = new byte[1000];
 				Arrays.fill(buffer, (byte) 0);
 				in.read(buffer);
-				String bufStr = new String(buffer);
+				String bufStr = new String(buffer, "UTF-8");
+				
 				if(buffer.equals("out"))
 				{
 					System.out.println("connection End");
 					break;
 				}
+				out.write("OK".getBytes(), 0, "OK".getBytes().length);
 				
-				out.write("OK".getBytes());
-				out.flush();
-				System.out.println(socket + ": " + new String(buffer));
+				System.out.println(socket + ": " + bufStr);
 				if(bufStr.subSequence(0, 5).equals("WRITE"))
-					saveWriteData();
+					saveWriteData(buffer);
 				else if(bufStr.subSequence(0, 5).equals("IMAGE"))
 					savingImage(bufStr);
 				else if(bufStr.subSequence(0, 6).equals("SEARCH"))
@@ -115,20 +117,20 @@ public class FSserver {
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
 			ImageIO.write(img, "jpg", new File("C:/Users/ChoiYeojin/Desktop/OSS/DesertTest.jpg"));
 		}
-		public void saveWriteData() throws IOException
+		public void saveWriteData(byte[] buf) throws IOException
 		{
 			BoardData temp = new BoardData();
 			Date now = new Date();
-			byte[] buf = new byte[1024];
-			in.read(buf);
-			String data = new String(buf);
+			//byte[] buf = new byte[1024];
+			//in.read(buf);
+			String data = new String(buf, "UTF-8");
 			temp.setMiddle5Datas(data.split("/"));
 			temp.setData(0, now.toString());
 			
 			DataLinks.add(temp);
 			System.out.println("Success Save new Board Datas: " + DataLinks.size());
-			out.write("SAVED".getBytes());
-			out.flush();
+			//out.write("SAVED".getBytes());
+			//out.flush();
 		}
 		public void searchData(String data) throws IOException
 		{
@@ -145,7 +147,7 @@ public class FSserver {
 				if(bufStr.equals(tempStr))
 				{
 					dataResult = temp.getAll();
-					out.write(dataResult.getBytes());
+					out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 					return;
 				}
 				else
@@ -175,7 +177,7 @@ class BoardData {
 	}
 	public String getAll()
 	{
-		return data[0] + "/" + data[2] + "/" + data[3] + "/" + data[4];
+		return (data[0] + "/" + data[1] + "/" + data[2] + "/" + data[3] + "/" + data[4] + "/" + data[5]);
 	}
 	public void setData(int index, String str)
 	{
@@ -183,9 +185,9 @@ class BoardData {
 	}
 	public void setMiddle5Datas(String[] str)
 	{
-		for(int i = 2/*1*/; i < 5/*6*/; i ++)
+		for(int i = 1; i < 6; i ++)
 		{
-			data[i] = str[i + 1];
+			data[i] = str[i];
 		}
 	}
 }
