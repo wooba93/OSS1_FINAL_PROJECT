@@ -5,7 +5,7 @@ import java.util.*;
 import java.awt.image.*;
 import javax.imageio.*;
 
-// DATE, USERNAME, BIGFOOD, SMALLFOOD, REGION, PRICE, EVALUE
+// DATE, USERNAME, FOODNAME, FOODSTYLE, REGION, PRICE, LOCATION, EVALUE
 // SEARCH//
 
 public class FSserver {
@@ -87,14 +87,14 @@ public class FSserver {
 		}
 		public void savingImage(/*String*/String data) throws IOException
 		{
-			int imgH = in.readInt();
+			/*int imgH = in.readInt();
 			System.out.println("imgH: " + imgH);
 			out.write("ImageH OK".getBytes());
 			out.flush();
 			int imgW = in.readInt();
 			System.out.println("imgW: " + imgW);
 			out.write("ImageW OK".getBytes());
-			out.flush();
+			out.flush();*/
 			int length = in.readInt();
 			System.out.println("length: " + length);
 			out.write("Byte Length OK".getBytes());
@@ -116,16 +116,21 @@ public class FSserver {
 			
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
 			ImageIO.write(img, "jpg", new File("C:/Users/ChoiYeojin/Desktop/OSS/DesertTest.jpg"));
+			
+			DataLinks.getLast().allocImageByte(length);
+			DataLinks.getLast().savingImage(base64String);
 		}
 		public void saveWriteData(byte[] buf) throws IOException
 		{
 			BoardData temp = new BoardData();
-			Date now = new Date();
+			//Date now = new Date();
 			//byte[] buf = new byte[1024];
 			//in.read(buf);
+			String[] dataStr;
 			String data = new String(buf, "UTF-8");
-			temp.setMiddle5Datas(data.split("/"));
-			temp.setData(0, now.toString());
+			dataStr = data.split("/");
+			temp.setAllDatas(dataStr);
+			//temp.setData(0, now.toString());
 			
 			DataLinks.add(temp);
 			System.out.println("Success Save new Board Datas: " + DataLinks.size());
@@ -169,8 +174,16 @@ public class FSserver {
 }
 
 class BoardData {
-	String[] data = new String[7];
-	
+	String[] data = new String[8];
+	byte[] image;
+	public void allocImageByte(int length)
+	{
+		image = new byte[length];
+	}
+	public void savingImage(byte[] origin)
+	{
+		image = Arrays.copyOf(origin, origin.length);
+	}
 	public String getData(int index)
 	{
 		return data[index];
@@ -183,11 +196,11 @@ class BoardData {
 	{
 		data[index] = str;
 	}
-	public void setMiddle5Datas(String[] str)
+	public void setAllDatas(String[] str)
 	{
-		for(int i = 1; i < 6; i ++)
+		for(int i = 0; i < 8; i ++)
 		{
-			data[i] = str[i];
+			data[i] = str[i + 1];
 		}
 	}
 }
