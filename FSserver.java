@@ -35,7 +35,7 @@ public class FSserver {
 		DataInputStream in;
 		DataOutputStream out;
 		byte[] buffer;
-		
+		String imagePath = System.getProperty("user.dir").replace("\\", "/") + "/Images/FOODSHARE";
 		public ThreadFunction(Socket socket)
 		{
 			this.socket = socket;
@@ -46,34 +46,35 @@ public class FSserver {
 		{			
 			while(true)
 			{
-			try{
-				in = new DataInputStream(this.socket.getInputStream());
-				out = new DataOutputStream(this.socket.getOutputStream());
-				byte[] buffer = new byte[1000];
-				Arrays.fill(buffer, (byte) 0);
-				in.read(buffer);
-				String bufStr = new String(buffer, "UTF-8");
+				try{
+					in = new DataInputStream(this.socket.getInputStream());
+					out = new DataOutputStream(this.socket.getOutputStream());
+					byte[] buffer = new byte[1000];
+					Arrays.fill(buffer, (byte) 0);
+					in.read(buffer);
+					String bufStr = new String(buffer, "UTF-8");
 				
-				if(buffer.equals("out"))
-				{
-					System.out.println("connection End");
+					if(buffer.equals("out"))
+					{
+						System.out.println("connection End");
+						break;
+					}
+					out.write("OK".getBytes(), 0, "OK".getBytes().length);
+					System.out.println(socket + ": " + bufStr);
+					if(bufStr.subSequence(0, 5).equals("WRITE"))
+						saveWriteData(buffer);
+					else if(bufStr.subSequence(0, 5).equals("IMAGE"))
+						savingImage(bufStr);
+					else if(bufStr.subSequence(0, 6).equals("SEARCH"))
+						searchData(bufStr);
+					else if(bufStr.subSequence(0, 9).equals("RECOMMEND"))
+						recommendFood(bufStr);
+				
+				}
+				catch(Exception e){
+					System.out.println("Send & Receive Error: " + e);
 					break;
 				}
-				out.write("OK".getBytes(), 0, "OK".getBytes().length);
-				
-				System.out.println(socket + ": " + bufStr);
-				if(bufStr.subSequence(0, 5).equals("WRITE"))
-					saveWriteData(buffer);
-				else if(bufStr.subSequence(0, 5).equals("IMAGE"))
-					savingImage(bufStr);
-				else if(bufStr.subSequence(0, 6).equals("SEARCH"))
-					searchData(bufStr);
-				
-			}
-			catch(Exception e){
-				System.out.println("Send & Receive Error: " + e);
-				break;
-			}
 			}
 			try{
 				socket.close();
@@ -108,27 +109,54 @@ public class FSserver {
 			
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
 			int integer = DataLinks.size() - 1;
-			String s = System.getProperty("user.dir").replace("\\", "/") + "/Images/FOODSHARE" + Integer.toString(integer) + ".jpg";
+			String s = imagePath + Integer.toString(integer) + ".jpg";
 			ImageIO.write(img, "jpg", new File(s));
 			
-			DataLinks.getLast().savingImage(DataLinks.size() - 1);
+			DataLinks.getLast().savingImage(s);
 		}
 		public void saveWriteData(byte[] buf) throws IOException
 		{
 			BoardData temp = new BoardData();
-			//Date now = new Date();
-			//byte[] buf = new byte[1024];
-			//in.read(buf);
 			String[] dataStr;
 			String data = new String(buf, "UTF-8");
 			dataStr = data.split("/");
 			temp.setAllDatas(dataStr);
-			//temp.setData(0, now.toString());
 			
 			DataLinks.add(temp);
 			System.out.println("Success Save new Board Datas: " + DataLinks.size());
-			//out.write("SAVED".getBytes());
-			//out.flush();
+		}
+		public void sendingImage(String name) throws IOException
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(1000);
+			BufferedImage img = ImageIO.read(new File(name));
+			ImageIO.write(img,  "jpg", baos);
+			byte[] base64String = baos.toByteArray();
+			byte[] buffer = new byte[1024];
+			
+			out.write(Integer.toString(base64String.length).getBytes());
+			in.read(buffer);
+			Arrays.fill(buffer, (byte) 0);
+			int count = 0;
+			
+			for(int i = 0; i < base64String.length;)
+			{
+				if(base64String.length - i >= 4500)
+				{
+					out.write(base64String, i, 4500);
+					i += 4500;
+				}
+				else
+				{
+					out.write(base64String, i, base64String.length - i);
+					i += (base64String.length - i);
+				}
+				out.flush();
+				
+				count ++;
+			}
+			in.read(buffer);
+			System.out.println(buffer + "/ " + count);
+			Arrays.fill(buffer, (byte) 0);
 		}
 		public void searchData(String data) throws IOException
 		{
@@ -136,7 +164,6 @@ public class FSserver {
 			Arrays.fill(buf, (byte) 0);
 			String[] splitData = data.split("/"); // SEARCH/FOODSTYLE/전체/REGION/전체
 			Iterator<BoardData> iterator = DataLinks.iterator();
-			//DataLinks.getFirst();
 			String dataResult = "";
 			
 			out.write(Integer.toString(DataLinks.sizeOfDatas(splitData[2], splitData[4])).getBytes());
@@ -153,15 +180,18 @@ public class FSserver {
 					out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 					in.read(buf);
 					Arrays.fill(buf, (byte) 0);
+ 					sendingImage(temp.getImageName());
 				}
 				else if(splitData[2].equals("전체"))
 				{
 					if(splitData[4].equals(tempStr2))
 					{
 						dataResult = temp.getAll();
+						dataResult += "/";
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						sendingImage(temp.getImageName());
 					}
 				}
 				else if(splitData[4].equals("전체"))
@@ -169,9 +199,11 @@ public class FSserver {
 					if(splitData[2].equals(tempStr1))
 					{
 						dataResult = temp.getAll();
+						dataResult += "/";
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						sendingImage(temp.getImageName());
 					}
 				}
 				else
@@ -179,15 +211,47 @@ public class FSserver {
 					if(splitData[2].equals(tempStr1) && splitData[4].equals(tempStr2))
 					{
 						dataResult = temp.getAll();
+						dataResult += "/";
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						sendingImage(temp.getImageName());
 					}
 				}
 			}
-			//out.write("NODATA".getBytes());
 			System.out.println("SEARCH COMPLETE");
 		}
+		public void recommendFood(String data) throws IOException
+		{
+			byte[] buf = new byte[1024];
+			Arrays.fill(buf, (byte) 0);
+			String[] splitData = data.split("/");
+			
+			Iterator<BoardData> iterator = DataLinks.iterator();
+			String dataResult = "";
+			int[] count = new int[4]; // 한식 중식 양식 일식
+			Arrays.fill(count, 0);
+			while(iterator.hasNext())
+			{
+				BoardData temp = iterator.next();
+				String tempStr = temp.getData(1);
+				if(splitData[1].equals(tempStr))
+				{
+					if(temp.getData(3).equals("한식"))
+						count[0] ++;
+					else if(temp.getData(3).equals("일식"))
+						count[1] ++;
+					else if(temp.getData(3).equals("양식"))
+						count[2] ++;
+					else
+						count[3] ++;
+				}
+			}
+			Arrays.sort(count);
+			
+			System.out.println("RECOMMEND COMPLETE");
+		}
+		
 		
 	}
 	public static void main(String[] args) {
@@ -210,23 +274,23 @@ class userLinkedList extends LinkedList<BoardData>
 			BoardData temp = iterator.next();
 			String tempStr1 = temp.getData(3);
 			String tempStr2 = temp.getData(4);
-			if(tempStr1.equals("전체") && tempStr2.equals("전체"))
+			if(data1.equals("전체") && data2.equals("전체"))
 			{
 				return this.size();
 			}
-			else if(tempStr1.equals("전체"))
+			else if(data1.equals("전체"))
 			{
-				if(tempStr2.equals(data2))
+				if(data2.equals(tempStr2))
 					count ++;
 			}
-			else if(tempStr2.equals("전체"))
+			else if(data2.equals("전체"))
 			{
-				if(tempStr1.equals(data1))
+				if(data1.equals(tempStr1))
 					count ++;
 			}
 			else
 			{
-				if(tempStr1.equals(data1) && tempStr2.equals(data2))
+				if(data1.equals(tempStr1) && data2.equals(tempStr2))
 					count ++;
 			}
 		}
@@ -234,14 +298,14 @@ class userLinkedList extends LinkedList<BoardData>
 		return count;
 	}
 }
+
 class BoardData {
 	String[] data = new String[8];
 	String imageName;
 	
-	public void savingImage(int i)
+	public void savingImage(String name)
 	{
-		imageName = System.getProperty("user.dir").replace("\\", "/") + "/Images/FOODSHARE";
-		imageName += (i + ".jpg");
+		imageName = name;
 	}
 	public String getData(int index)
 	{
@@ -249,13 +313,9 @@ class BoardData {
 	}
 	public String getAll()
 	{
-		String dataStr = data[0] + "/" + data[1] + "/" + data[2] + "/" + data[3] + "/" + data[4] + "/" + data[5] + "/" + data[6] + "/" + data[7] + "//";
-		dataStr += "/////";
+		String dataStr = data[0] + "/" + data[1] + "/" + data[2] + "/" + data[3] + "/" + data[4] + "/" + data[5] + "/" + data[6] + "/" + data[7];
+		dataStr = dataStr + "/";
 		return dataStr;
-	}
-	public void setData(int index, String str)
-	{
-		data[index] = str;
 	}
 	public void setAllDatas(String[] str)
 	{
@@ -263,5 +323,9 @@ class BoardData {
 		{
 			data[i] = str[i + 1];
 		}
+	}
+	public String getImageName()
+	{
+		return imageName;
 	}
 }
