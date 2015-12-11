@@ -8,13 +8,16 @@ import javax.imageio.*;
 // DATE, USERNAME, FOODNAME, FOODSTYLE, REGION, PRICE, LOCATION, EVALUE
 
 public class FSserver {
+	//all boarded data
 	static userLinkedList DataLinks = new userLinkedList();
 	static int port = 8080;
 	ServerSocket serverSocket = null;
 	Socket socket = null;
 	
+	//initializing socket
 	public void init() {
 		try{
+			//listen
 			serverSocket = new ServerSocket(port);
 			System.out.println("Server is running...");
 			while(true) {
@@ -39,7 +42,6 @@ public class FSserver {
 		public ThreadFunction(Socket socket)
 		{
 			this.socket = socket;
-
 		}
 		@Override
 		public void run()
@@ -51,27 +53,43 @@ public class FSserver {
 					out = new DataOutputStream(this.socket.getOutputStream());
 					byte[] buffer = new byte[1000];
 					Arrays.fill(buffer, (byte) 0);
+
+					//read request from client
 					in.read(buffer);
 					String bufStr = new String(buffer, "UTF-8");
-				
-					if(buffer.equals("out"))
+					
+					System.out.println(socket + ": " + bufStr);
+					//save board data - string
+					if(bufStr.subSequence(0, 5).equals("WRITE"))
+					{
+						out.write("OK".getBytes(), 0, "OK".getBytes().length);
+						saveWriteData(buffer);
+					}
+					//save board image - image
+					else if(bufStr.subSequence(0, 5).equals("IMAGE"))
+					{
+						out.write("OK".getBytes(), 0, "OK".getBytes().length);
+						savingImage(bufStr);
+					}
+					//search data
+					else if(bufStr.subSequence(0, 6).equals("SEARCH"))
+					{
+						out.write("OK".getBytes(), 0, "OK".getBytes().length);
+						searchData(bufStr);
+					}
+					//recommend food type
+					else if(bufStr.subSequence(0, 9).equals("RECOMMEND"))
+						recommendFood(bufStr);
+					//end connection
+					else
 					{
 						System.out.println("connection End");
 						break;
 					}
-					out.write("OK".getBytes(), 0, "OK".getBytes().length);
-					System.out.println(socket + ": " + bufStr);
-					if(bufStr.subSequence(0, 5).equals("WRITE"))
-						saveWriteData(buffer);
-					else if(bufStr.subSequence(0, 5).equals("IMAGE"))
-						savingImage(bufStr);
-					else if(bufStr.subSequence(0, 6).equals("SEARCH"))
-						searchData(bufStr);
-					else if(bufStr.subSequence(0, 9).equals("RECOMMEND"))
-						recommendFood(bufStr);
 				
 				}
 				catch(Exception e){
+					
 					System.out.println("Send & Receive Error: " + e);
 					break;
 				}
@@ -87,14 +105,18 @@ public class FSserver {
 		}
 		public void savingImage(String data) throws IOException
 		{
+			//read image size
 			int length = in.readInt();
 			System.out.println("length: " + length);
 			out.write("Byte Length OK".getBytes());
 			out.flush();
+			
 			byte[] baseTemp = new byte[4500];
 			byte[] base64String = new byte[length];
 			int count = 0;
 			int dataLength = 0;
+			
+			//read image by byte type
 			for(int i = 0; i < length; i += dataLength)
 			{
 				dataLength = in.read(baseTemp);
@@ -107,12 +129,14 @@ public class FSserver {
 			
 			System.out.println("image read ok: " + count);
 			
+			//convert byte[] to image.jpg and save image
 			BufferedImage img = ImageIO.read(new ByteArrayInputStream(base64String));
 			int integer = DataLinks.size() - 1;
 			String s = imagePath + Integer.toString(integer) + ".jpg";
 			ImageIO.write(img, "jpg", new File(s));
 			
-			DataLinks.getLast().savingImage(s);
+			//save image name
+			DataLinks.getLast().setImageName(s);
 		}
 		public void saveWriteData(byte[] buf) throws IOException
 		{
@@ -120,24 +144,30 @@ public class FSserver {
 			String[] dataStr;
 			String data = new String(buf, "UTF-8");
 			dataStr = data.split("/");
-			temp.setAllDatas(dataStr);
+			
+			//save all data
+			temp.setData(dataStr);
 			
 			DataLinks.add(temp);
 			System.out.println("Success Save new Board Datas: " + DataLinks.size());
 		}
 		public void sendingImage(String name) throws IOException
 		{
+			//send image from server to client
+			//convert image.jpg to byte[]
 			ByteArrayOutputStream baos = new ByteArrayOutputStream(1000);
 			BufferedImage img = ImageIO.read(new File(name));
 			ImageIO.write(img,  "jpg", baos);
 			byte[] base64String = baos.toByteArray();
 			byte[] buffer = new byte[1024];
 			
+			//send image size to client
 			out.write(Integer.toString(base64String.length).getBytes());
 			in.read(buffer);
 			Arrays.fill(buffer, (byte) 0);
-			int count = 0;
 			
+			int count = 0;
+			//send image
 			for(int i = 0; i < base64String.length;)
 			{
 				if(base64String.length - i >= 4500)
@@ -165,56 +195,81 @@ public class FSserver {
 			String[] splitData = data.split("/"); // SEARCH/FOODSTYLE/전체/REGION/전체
 			Iterator<BoardData> iterator = DataLinks.iterator();
 			String dataResult = "";
-			
-			out.write(Integer.toString(DataLinks.sizeOfDatas(splitData[2], splitData[4])).getBytes());
+			int sizeOfDatas = DataLinks.sizeOfDatas(splitData[2], splitData[4]);
 			in.read(buf);
+			System.out.println(new String(buf));
+			Arrays.fill(buf, (byte) 0);
+			
+			//if there is no found data
+			if(sizeOfDatas == 0)
+			{
+				out.write("SEARCHEND".getBytes());
+				in.read(buf);
+				System.out.println(new String(buf));
+				Arrays.fill(buf, (byte) 0);
+				return;
+			}
+			//send the number of data
+			out.write(Integer.toString(sizeOfDatas).getBytes());
+			in.read(buf);
+			
 			Arrays.fill(buf, (byte) 0);
 			while(iterator.hasNext())
 			{
 				BoardData temp = iterator.next();
 				String tempStr1 = temp.getData(3);
 				String tempStr2 = temp.getData(4);
+				//find data with condition
+				//all & all
 				if(splitData[2].equals("전체") && splitData[4].equals("전체"))
 				{
 					dataResult = temp.getAll();
+					//send boarded data
 					out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 					in.read(buf);
 					Arrays.fill(buf, (byte) 0);
- 					sendingImage(temp.getImageName());
+					//send boarded image
+					sendingImage(temp.getImageName());
 				}
+				//all & special
 				else if(splitData[2].equals("전체"))
 				{
 					if(splitData[4].equals(tempStr2))
 					{
 						dataResult = temp.getAll();
-						dataResult += "/";
+						//send boarded data
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						//send boarded image
 						sendingImage(temp.getImageName());
 					}
 				}
+				//special & all
 				else if(splitData[4].equals("전체"))
 				{
 					if(splitData[2].equals(tempStr1))
 					{
 						dataResult = temp.getAll();
-						dataResult += "/";
+						//send boarded data
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						//send boarded image
 						sendingImage(temp.getImageName());
 					}
 				}
+				//special & special
 				else
 				{
 					if(splitData[2].equals(tempStr1) && splitData[4].equals(tempStr2))
 					{
 						dataResult = temp.getAll();
-						dataResult += "/";
+						//send boarded data
 						out.write(dataResult.getBytes(), 0, dataResult.getBytes().length);
 						in.read(buf);
 						Arrays.fill(buf, (byte) 0);
+						//send boarded image
 						sendingImage(temp.getImageName());
 					}
 				}
@@ -223,33 +278,52 @@ public class FSserver {
 		}
 		public void recommendFood(String data) throws IOException
 		{
-			byte[] buf = new byte[1024];
-			Arrays.fill(buf, (byte) 0);
 			String[] splitData = data.split("/");
 			
 			Iterator<BoardData> iterator = DataLinks.iterator();
-			String dataResult = "";
-			int[] count = new int[4]; // 한식 중식 양식 일식
-			Arrays.fill(count, 0);
+			recommendCount[] count = {new recommendCount("한식"), new recommendCount("중식"), new recommendCount("양식"), new recommendCount("일식")}; // 한식 중식 양식 일식
+			
 			while(iterator.hasNext())
 			{
 				BoardData temp = iterator.next();
 				String tempStr = temp.getData(1);
+				//check user's board and count
 				if(splitData[1].equals(tempStr))
 				{
 					if(temp.getData(3).equals("한식"))
-						count[0] ++;
-					else if(temp.getData(3).equals("일식"))
-						count[1] ++;
+						count[0].ascCount();
+					else if(temp.getData(3).equals("중식"))
+						count[1].ascCount();
 					else if(temp.getData(3).equals("양식"))
-						count[2] ++;
+						count[2].ascCount();
 					else
-						count[3] ++;
+						count[3].ascCount();
 				}
 			}
-			Arrays.sort(count);
-			
+			//find minimum food type
+			//if there are a lot of food type, choose only one
+			String result = findMinRandom(count);
+			//send chosen food type
+			out.write(result.getBytes());
 			System.out.println("RECOMMEND COMPLETE");
+		}
+		public String findMinRandom(recommendCount[] recount)
+		{
+			//sort(ascending) by count
+			Arrays.sort(recount, recommendCount.countComparator);
+			int index = 3;
+			
+			//count the number of minimum food type
+			while(recount[0].getCount() < recount[index].getCount())
+			{
+				index --;
+			}
+			
+			//generate random number
+			Random rand = new Random();
+			int n = rand.nextInt(index + 1);
+			
+			return recount[n].getName();
 		}
 		
 		
@@ -261,8 +335,43 @@ public class FSserver {
 	}
 
 }
+//class for "count-food type"
+class recommendCount
+{
+	int count;
+	String name;
+	recommendCount(String nameStr)
+	{
+		count = 0;
+		name = nameStr;
+	}
+	public void ascCount()
+	{
+		count ++;
+	}
+	public int compareTo(recommendCount o)
+	{
+	    return (int)(this.count - o.count);
+	}
+	public int getCount()
+	{
+		return count;
+	}
+	public String getName()
+	{
+		return name;
+	}
+	public static Comparator<recommendCount> countComparator = new Comparator<recommendCount>() {
+		public int compare(recommendCount rec1, recommendCount rec2)
+		{
+			return rec1.compareTo(rec2);
+		}
+	};
+}
+//class for boarded data, extends linked list structure
 class userLinkedList extends LinkedList<BoardData>
 {
+	//count selected data with data1 and data2
 	public int sizeOfDatas(String data1, String data2)
 	{
 		int count = 0;
@@ -298,12 +407,12 @@ class userLinkedList extends LinkedList<BoardData>
 		return count;
 	}
 }
-
+//class for boarded data - saving actual data
 class BoardData {
 	String[] data = new String[8];
 	String imageName;
 	
-	public void savingImage(String name)
+	public void setImageName(String name)
 	{
 		imageName = name;
 	}
@@ -317,7 +426,7 @@ class BoardData {
 		dataStr = dataStr + "/";
 		return dataStr;
 	}
-	public void setAllDatas(String[] str)
+	public void setData(String[] str)
 	{
 		for(int i = 0; i < 8; i ++)
 		{
